@@ -1,0 +1,137 @@
+---
+title: "Joining_Data"
+author: "William Sheahan"
+date: "1/21/2022"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading in Packages and Data
+
+In this problem set we will practice the skills we learned last time for cleaning messy data, and then learn a new technique for combining different datasets that contain matching columns which in R is called "Joining". 
+
+First, let's load the two datasets we will be using today. We will start with loading in and cleaning a new dataset containing 2020 grid3 district population estimates normalized to the World Bank population for Zambia (see url in code chunk below). Once we have cleaned this, we will want to join it to our usual case_data dataset from the in-person trainings, which should be saved in your "R-training/data" folder on your computer.
+
+1. Load in the example data
+
+```{r packages, warning = FALSE, message=FALSE}
+library(tidyverse)
+library(sf)
+library(janitor)
+library(lubridate)
+```
+
+```{r loading in data, warning=FALSE, message=FALSE}
+dist_pop <- read_csv("https://drive.google.com/uc?export=download&id=1ypf9TfZiZsJqZOLYzQ_1EdcGMXkYgFG4")
+case_data <- read_csv("C:/Users/wsheahan/OneDrive - PATH/Desktop/r-workshop/data/district-cases-long.csv")
+
+```
+
+*Question 1. What issues are there with the new population dataset? (Hint: Try making a table of the variables)*
+
+```{r checking vars, echo = FALSE, warning=FALSE, message=FALSE}
+names(dist_pop)
+table(dist_pop$district, useNA = "always")
+```
+
+At a glance, we can see that the names of the columns are not conducive to our analysis. We can either reload the dataset with the janitor::clean_names() function piped in, or, as this is a dataset with few columns, we can rename the columns manually using rename or using a shortcut in the select() command. In select, we can use the following formula -- select("new name" = "old name"). 
+
+Also, I can see from looking at a table of the district variable, that somebody left a "Test" district in, where the population is NA. Let's remove that with a filter() command.
+
+```{r fix issues 1, message=FALSE, warning=FALSE}
+dist_pop_clean <- dist_pop %>%
+  select(c("province" = "provive",
+           "district" = "District",
+           "pop_2020" = "2020 pop")) %>%
+  filter(district != "Test")
+```
+
+There may still be some issues that we haven't fixed yet (it is usually a good idea to assume that there are some hidden issues with your data), so let's be on the lookout for those as we continue. 
+
+We will also want to take time at the start of our analysis to prepare our datasets so that they are on a similar level of analysis. In this case, we will be joining our case_data dataset with a district-level 2020 population file. Our case_data is already at the district level, but it isn't aggregated to Annual statististics, which would make our lives easier latre on. Let's aggregate the data to an annual level now, and filter it so it only retains 2020 case data.
+
+``` {r preparing data for join, message=FALSE, warning = FALSE}
+case_data_2020 <- case_data %>% filter(!is.na(district)) %>% 
+  mutate(year = lubridate::year(period)) %>%
+  group_by(year, district, province, data_type) %>% 
+  summarise(count = sum(count, na.rm=TRUE)) %>%
+  filter(year == 2020)
+```
+
+
+## Joining Data
+
+When we want to combine data in R, there are many potential techniques we can use. The most common dplyr-based method is to use a command called left_join(). Conceptually, this means that we will be picking one dataset to be our primary dataset (think of holding it in your left hand) and then joining a new dataset to that by one or more matching "key" variables (think of adding something from your right hand into your left hand, fitting it together with a magnet). This left_join ensures that we will only get observations from the secondary or right-side dataset that have a match in our primary or left-side dataset. See the below image for an in-depth examination of left_join() from https://www.guru99.com/r-dplyr-tutorial.html#3
+
+
+
+This may not always be what you want to do in the future, you may wish to include all observations from both datasets, or only those that don't match. For these applications, there are many other types of joins, and I would encourage you to read up on them in this nice tutorial https://www.garrickadenbuie.com/project/tidyexplain/
+
+Because joining can sometimes work less than perfectly, it is VERY IMPORTANT to check your newly joined dataset, to ensure that things went as planned. Before you join, you should have a rough idea of what you expect the new dataset to look like (# of Variables, # of Observations, etc.), and then make sure to confirm those assumptions after the join goes through. 
+
+*Question 2. What do you expect the new dataset to look like after joining it with the district populations data?*
+
+For now, let's try to do a left_join, using our case_data as the primary (left-side) dataset, and the dist_pop_clean dataset as our secondary (right-side) dataset.
+
+```{r join data 1, warning=FALSE}
+case_data_pop <- case_data_2020 %>%
+  left_join(dist_pop_clean)
+```
+As you can see from the message in your R console, if you do not supply a key variable for R to join by, it will automatically try to identify any set of variables that match between your two datasets. This is helpful, but dangerous. R does not always do a perfect job of matching, and it is much safer to specify what columns to join by in your left_join command, using a "by" statement, as shown below.
+
+```{r join data 2, message=FALSE, warning=FALSE}
+case_data_pop <- case_data_2020 %>%
+  left_join(dist_pop_clean, by = c("district", "province"))
+```
+
+
+*Question 3. Now that we have joined our two datasets, what issues can you find with the newly joined dataset?*
+
+``` {r find issues with joined data 1, message=FALSE, warning = FALSE}
+table(case_data_pop$pop_2020, useNA = "always")
+```
+
+We only added 1 extra variable and no new observations, which is what we expected! However, it seems there are many NAs in this dataset that weren't in the dist_pops when we loaded it in. This usually happens with joins where two columns that we think are the same (our "keys") are not actually exactly the same. There may be one value that appears in our right-key column but not in our left-key column, so now NAs have been introduced because there was nothing to match it with in the left-key column. There are lots of ways to find out exactly where we went wrong, but usually with province and district, it is the case that some spelling error was introduced in one of the datasets, or an alternative spelling was used. 
+
+*Question 4. Where are the errors coming from in the joined dataset? (Hint: There are at least two discrepancies, one each in our province and district fields respectively)*
+
+We can fix these issues using the ifelse command that we learned in the "Cleaning Messy Data" problem set from two weeks ago. Let's go back into the dist_pops dataset, fix those issues, and try the join again.
+
+``` {r fix issues 2, message=FALSE, warning=FALSE}
+
+#First fix the issues in the district populations dataset
+dist_pop_clean <- dist_pop %>%
+  select(c("province" = "provive",
+           "district" = "District",
+           "pop_2020" = "2020 pop")) %>%
+  filter(district != "Test") %>%
+  mutate(province = ifelse(district == "Siavonga", "Southern", province),
+        district = ifelse(district == "Kalaba", "Kalabo", district))
+
+#Now Join the two datasets
+case_data_pop <- case_data_2020 %>%
+  left_join(dist_pop_clean, by = c("district", "province"))
+```
+
+Now that we have redone our join, did we fix the problem? Make sure to check your variables to see if things went as expected, or if there are any other issues that we may have missed (or that I didn't tell you about...)
+
+``` {r find issues with joined data 2, message=FALSE, warning = FALSE}
+table(case_data_pop$pop_2020, useNA = "always")
+```
+
+Now that we have joined and cleaned our two datasets, we can start to use them for analysis! 
+
+*Question 5. What are the 10 highest malaria-burden districts by confirmed cases per 1000 population for 2020 (Hint: Use mutate() to make a new column that = cases divided by population times 1000, and make sure to use only the correct data elements)? How is this list different than if we were only using the raw case numbers? Bonus points to anyone who shows this information using a plot*
+
+``` {r make table}
+case_data_pop <- case_data_pop %>%
+  mutate(per_1000 = )
+
+```
+

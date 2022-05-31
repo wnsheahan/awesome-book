@@ -1,0 +1,121 @@
+---
+title: "Understanding Error Messages in R - Part 3"
+author: "William Sheahan"
+date: "4/18/2022"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Example of a Novel Error Message**
+
+This week, we will be taking a crack at a brand-new error message
+produced by routine code when trying to determine the number of cases in
+each district of Eastern Province in 2021. This time, I will not be
+providing an answer in this document. Please use the steps from the last
+two trainings to figure out what went wrong and how to fix it.
+
+```{r new error, warning=FALSE, message=FALSE, error = TRUE}
+#load packages
+library(tidyverse)
+library(lubridate)
+
+#set your working directory using your own filepath, not mine
+setwd("C:/Users/wsheahan/OneDrive - PATH/Desktop/r-workshop")
+
+#load datasets
+case_data <- read_csv("data/district-cases-long.csv")
+
+#generate summary
+case_data %>%
+  filter(province == "Eastern") %>%
+  filter(between(period, as.Date("2021-01-01"), as.Date("2021-12-01"))) %>%
+  group_by(district) %>%
+  sum(count, na.rm = TRUE)
+
+```
+
+What went wrong? Use the error message above to determine the source of the error, and follow the steps from the previous lesson to fix it. Tips and tricks from previous lessons below. 
+
+## **Tips and Tricks**
+
+This is a quick rundown of my recommended "process" for dealing with
+error messages in R. The first four steps are a miniature version of the
+lessons we have already covered in this unit. Steps 5 through 7 are more
+broad strategies, with commentary from [Y. Wendy Huynh's R for Graduate
+Students](https://bookdown.org/yih_huynh/Guide-to-R-Book/trouble.html)
+that I find to be particularly helpful.
+
+1.  First, I usually like to look for misspellings or improper calls to
+    the wrong data objects.
+
+    -   This tends to account for well over 90% of the errors in my own
+        code (Because I copy and paste a lot from one code section to
+        another, I am particularly vulnerable to hanging parentheses, +
+        signs, and dplyr %>% pipes)
+
+2.  Second, I look at the dataset itself to see if I can find any clues
+    as to what went wrong in the dataset structure.
+
+    -   Has a column gotten filled with NA values somehow?
+
+    -   Did a variable get misspelt or removed by mistake?
+
+        -   Try using the *table()* command
+
+    -   Is the variable type incompatible with my code?
+
+        -   Try using the *class()* command
+
+3.  Third, I will run the code line by line until I find exactly where
+    the error occurs.
+
+    -   This is particularly useful when using dplyr pipes %>% over
+        multiple lines of code
+
+4.  Fourth, I will google the problem.
+
+    -   Use the formula: "key word" "error message" "R"; and look for
+        stack overflow responses that match your situation to some
+        degree.
+
+    -   No answer is likely to give you exactly the solution to your
+        situation, find the piece that is useful to you.
+
+5.  Fifth, I will restart R.
+
+    -   "In rare (but real) circumstances, I have found that RStudio can
+        run into some issues that have nothing to do with your code. If
+        your code is running strangely, the age-old trick of turning it
+        off and on again (i.e., RStudio or your computer) occasionally
+        does work. Make sure you save the information you need to save
+        before you close RStudio or restart your computer. Upon
+        reopening RStudio, make sure the Global Environment is clean
+        before attempting to execute code." (Huynh, 2019)
+
+6.  Sixth, I will take a break.
+
+    -   "Another option is to take a break. During that period, little
+        elves come and fix your computer for you. If you don't leave,
+        they'll never show up. In all seriousness, error messages can be
+        anger-inducing and in your cloud of frustration, you may not be
+        able to think clearly. Step away for a bit and look at it from a
+        different emotional state." (Huynh, 2019)
+
+7.  Seventh, I will ask someone for help.
+
+    -   "Finally, ask someone for help. An experienced R user should be
+        able to figure out what went wrong pretty quickly. This is
+        because experts have made (and hopefully fixed) 100X more errors
+        than beginners; many people struggle with the same problems at
+        the beginning. Problem solving is (in my opinion) the best way
+        to learn. However, it's also the most time consuming. Ask for
+        help when you need it. Time is an invaluable, nonrenewable
+        resource." (Huynh, 2019)

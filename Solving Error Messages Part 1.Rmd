@@ -1,0 +1,122 @@
+---
+title: "Understanding Error Messages in R Part 2"
+author: "William Sheahan"
+date: "4/4/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, warning=FALSE,message=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+## **Solving Unfamiliar Error Messages**
+
+In the previous session, we learned about the causes of some of the most common error messages that you are likely to see when coding in R. We saw examples of misspellings, capitalization issues, closing punctuation errors, continuing punctuation errors, filepath issues, and unloaded libraries. Each of these essentially caused the same fundamental problem, *R was looking for something that wasn't there*.
+
+We also touched on the fact that, no matter how much instruction we go through together, there are always going to be unfamiliar errors at some point in your work that we won't have discussed together. So, what do we do now? If we know we can't cover all the error types, what is the point? Well, we can't cover each error individually, but now that you know some of the most common errors, [we can learn how to problem solve for unfamiliar errors in a systematic way.]{.ul}
+
+# **Consulting Doctor Google, PhD**
+
+When you see an unfamiliar error, the first thing to do is to look for the common errors that we discussed last time. Look for misspellings, unclosed brackets, or unloaded libraries. These are often the answer to errors like *"this object or function isn't found/doesn't exist"*. However, sometimes we get totally unfamiliar errors that aren't solvable by simple fixes we already know.
+
+In these cases, it is not unusual to feel some amount of terror, rage, or despair. Luckily, *Dr. Google* can help you with these feelings. It is important to remember that, even when you are coding on your own, there is always a vast and thriving community of researchers on the internet who have likely encountered your problem before. We will learn how to tap into that resource today by googling a problem in our code.
+
+First, let's load our practice data
+
+```{r loading data, warning=FALSE, message=FALSE, error = TRUE}
+#setwd("C:/Users/wsheahan/OneDrive - PATH/Desktop/r-workshop")
+case_data2 <- 
+  read.csv("https://drive.google.com/uc?export=download&id=1AdygoDQIROYN9YOFEGY4-pXehfbR5grR")
+```
+
+This comes in as the same format that we usually see with the "district-cases-long.csv" dataset that we use for training. Let's try to reproduce the plot we have previously made, tracking cases over time by district in Eastern Province.
+
+```{r cases plot1}
+case_data2 %>%
+  filter(province == "Eastern") %>%
+  ggplot(aes(x = period, y = count, color = district)) +
+  geom_line()
+
+```
+
+When we try to make our plot, we get a blank plot along with the warning message *"geom_path: Each group consists of only one observation. Do you need to adjust the group aesthetic?"*
+
+This is strange because we haven't called group_by() anywhere in our code, so why is it asking about the group aesthetic? I don't think anything is misspelt, and I don't think we are calling on any functions or data that don't exist. If we are unsure what the problem is, this is a good time to try to google an unfamiliar error.
+
+# **How to Google Effectively**
+
+This may not seem like a critical or difficult skill, but putting the right information into google is more important, and more difficult, than you might think. The first thing to do is to copy the error message into google directly, usually with some designation that you are searching for R-related responses, rather than STATA/Excel/MatLab/GIS/any other computing service.
+
+If we paste *"R geom_path: Each group consists of only one observation. Do you need to adjust the group aesthetic?"* into google, you will see a number of possible websites to check. Usually, the best website for R help on error messages is the top hit, **"stackoverflow.com"**.
+
+![](C:/Users/wsheahan/AppData/Local/RStudio/tmp/paste-DC9A795D.png)
+
+This is an online forum where thousands of R users (and users of other computing services) post questions and answers about code every day, and it is a free resource that we can use without setting up an account! Eventually, we will want to learn how to directly post questions onto the stackoverflow website, but for now, let's see if somebody has already answered our question (*hint: Somebody usually has*). Let's check the first question/answer.
+
+![](C:/Users/wsheahan/AppData/Local/RStudio/tmp/paste-CDF72CCA.png)
+
+Stack overflow is structured so that the question asked is always the top of the page, with the user's original question/data examples below. If you scroll down to the bottom of the question, you should see answers (usually sorted by highest score, see the upvotes on the left). What we want to do is to find the solution posted, and see if incorporating that in our code fixes our problem.
+
+![](C:/Users/wsheahan/AppData/Local/RStudio/tmp/paste-FAFF7023.png)
+
+The only downside to lots of people asking detailed R questions is that sometimes the answers given pertain more directly to the other person's work (that originally asked the question) than they do to ours. In this case, the question/answer for this first link don't really help us all that much. If we add group = 1 inside our aesthetic call, we aren't getting what we want.
+
+```{r cases plot 2}
+case_data2 %>%
+  filter(province == "Eastern") %>%
+  ggplot(aes(x = period, y = count, color = district, group = 1)) +
+  geom_line()
+```
+
+Seeing as that didn't really work, let's try another similar link. Back on the google results page, the second option (which is usually related to the first suggested link) has a different idea.
+
+![](C:/Users/wsheahan/AppData/Local/RStudio/tmp/paste-F53287D4.png)
+
+The question is still only tangentially related to what we are doing, but now they are working with a *Date* field that is similar to our *period*.
+
+![](C:/Users/wsheahan/AppData/Local/RStudio/tmp/paste-26089D3A.png)
+
+It looks like this question asker had a problem with their date field being the wrong Class of variable, and they got the same error that we did. Let's look to see what field our *period* column is using the *class* function.
+
+```{r check class}
+class(case_data2$period)
+```
+
+This is our problem. Normally, our period column should read in as a class "Date" variable. Because we are trying to plot a character vector on our x-axis, we are having some problems. The question online had a similar issue, but they were using a "Factor" variable and converting that to Date. We want to just convert a character to a date, so we can skip the first part of their solution, and just use the **as.Date()** function on our period column in the aesthetics call. Let's try that.
+
+```{r cases plot 3}
+case_data2 %>%
+  filter(province == "Eastern") %>%
+  ggplot(aes(x = as.Date(period), y = count, color = district)) +
+  geom_line()
+```
+
+And that fixes the problem! We can now track cases over time visually with one line per district.
+
+This was an example of how we would effectively consult google to solve an unfamiliar error problem. It is also a reminder that it is always a good idea to check the structure of our dataset to see what class of variables our columns are. You can do this when you load in a dataset, either using the **str()** function on the whole dataset, or using the **class()** function on a single variable.
+
+```{r check types}
+str(case_data2)
+class(case_data2$period)
+```
+
+## **Tips and Tricks**
+
+1.  If you are unfamiliar with an error message, and can't figure out what the problem is by checking for misspellings, missing objects, or other common errors, try checking the class of your variables with **class()** or **str().** For shorthand, if you are trying to do something with math, it probably won't work if your variable is class "Character" (letters instead of numbers). There are other class mismatching issues out there (particularly with Factors) but that is always a good first one to check.
+
+2.  If the class or another simple error isn't the problem, try copying and pasting the error message into google, along with the letter "R". Try to only copy the general parts of the message, not parts that include the name of your dataset or variables, as they will be different from anything else that other people have solved online. ([Example]{.ul}: if your error message says "can't find object case_data2, object does not exist", don't include case_data2, just write "R can't find object, object does not exist")
+
+3.  The first results will often be from stackoverflow.com, which is a great resource, but there are almost always multiple versions of the same question, and multiple answers that work for each one. Take a good long look at the answers for each question, scrolling further down the page to see past the first solution, and see if the suggested solutions work in your code (make sure to always use your own datasets/file names when using suggested answers). If they don't work for you, try looking at a related question.
+
+4.  There is almost always somebody who has had the problem you are having before in some fashion, even if it was with different data or for a different purpose. In rare cases, you could come across a totally original problem, and for that, we can make an account on stackoverflow.com to ask new questions. This can be a slow and frustrating process (people get very snarky about how you have to post your data in order to get an answer: see below)
+
+    ![](C:/Users/wsheahan/AppData/Local/RStudio/tmp/paste-5EC81E76.png)
+
+    so it is usually better to find a previous related answer, but we can go through how to post reproducible data questions in future lessons.

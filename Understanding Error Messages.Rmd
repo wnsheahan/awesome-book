@@ -1,0 +1,276 @@
+---
+title: "Understanding Error Messages in R - Part 1"
+author: "William Sheahan"
+date: "3/22/2022"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, warning=FALSE,message=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+## **Understanding Error Messages**
+
+One of the most difficult and perplexing things about learning R is
+learning how to decode error messages. Usually, when something in our
+code doesn't work, R tries to be helpful by telling us went wrong, using
+an error message. Unfortunately, the meaning of these messages is not
+always very clear.
+
+In this unit, we are going to learn about some of the most common R
+error messages, why they occur, how to identify their source, and how to
+fix them. Over the course of the next few sessions, we will take on more
+and more complex errors that can manifest in our code and learn how to
+effectively search the internet for answers to our more complex coding
+problems.
+
+To begin, let's go over which aspects of R code cause the most common
+kinds of errors.
+
+## *Spelling and Punctuation Errors*
+
+**Misspelling** - By far the most common error in my own code, and a
+likely issue in just about any situation, is an accidental misspelling
+of an object or function that has been overlooked. If you get an error
+message saying that something *"does not exist"*, *"cannot be opened"*,
+or *"could not find function"*, there is a good chance that a letter has
+been misplaced.
+
+Double check the lines of code for any obvious misspellings, **running
+each line one at a time** to identify the place where the error occurs,
+and then if you cannot immediately identify the error, try to call up a
+table of the variables you are working with, and look at the output to
+see if there is an unexpected spelling in the dataset itself that you
+need to fix or match in your code.
+
+```{r loading data, warning=FALSE, message=FALSE, error = TRUE}
+setwd("C:/Users/wsheahan/OneDrive - PATH/Desktop/r-workshop")
+case_data <- readr::read_csv("data/district-cases-long.csv")
+```
+
+```{r example - misspellings, error = TRUE}
+case_data %>% 
+  filter(data_type %in% c("Clinical", "Confirmed", "Confirmed_Passive_CHW")) %>%
+  group-by(lubridate::year(period), district) %>%
+  summarise(count)
+
+```
+
+When we run the above code chunk, we get an error saying that a function
+"group" was not found.
+
+*Question 1:* Why did this happen?
+
+*Question 2:* How would we fix it?
+
+**Capitalization** - It is important to remember that R is
+*case-sensitive*, meaning that it does matter whether a letter is
+**Capitalized** or **lower-case**. This is important for calling
+datasets and variable names as well as when typing out a function or a
+graphical parameter. If you have an error saying something doesn't exist
+or can't be found, and you have checked already that it is spelled
+correctly, make sure you didn't accidentally give it a capital or
+lower-case beginning by mistake.
+
+```{r example - capitalization, error = TRUE}
+case_data %>% 
+  filter(data_type %in% c("Clinical", "Confirmed", "Confirmed_Passive_CHW")) %>%
+  group_by(lubridate::year(period), District) %>%
+  summarise(count)
+
+```
+
+When we run the above code chunk, we get an error with a lot of
+information. In this case, the first part of the error message "adding
+computed columns in group_by() x Problem with 'mutate()' input '...2'"
+is somewhat hard to understand. Let's focus on the last part of the
+error message "object 'District' is not found". This tells us that R
+searched for an object, in this case a variable we want to group by, and
+couldn't find it, even though we know that district is a column we have
+in our dataset. Try running a names() command on your dataset to see
+what the column names are.
+
+*Question 3:* Why did this happen?
+
+*Question 4:* How do we fix it?
+
+**Closing Punctuation** - It is important to always double-check your
+parentheses (), brackets \[\], and commas , in R because every time R
+sees an open parentheses or bracket, it will continue to assume
+everything after that is part of the same statement until the
+parentheses or bracket is closed. This is most often an issue in the
+case where we have multiple open brackets and only remember to close
+one.
+
+```{r example - closing punctuation, error = TRUE}
+case_summary <- case_data %>% 
+  filter(data_type %in% c("Clinical", "Confirmed", "Confirmed_Passive_CHW")) %>%
+  group_by(lubridate::year(period, district) %>%
+  summarise(count)
+
+table(case_summary$district)
+```
+
+For some reason, when we try to run this code chunk we get the above
+error of "unexpected symbol in: table". This is a very common error, and
+it usually indicates a piece of punctuation is missing or there is one
+too many punctuation marks.
+
+*Question 5:* Why did this happen?
+
+*Question 6:* How would we fix it?
+
+**Continuing Punctuation** -
+
+```{r example - continuing puntuation, error = TRUE}
+case_summary <- case_data %>% 
+  filter(data_type %in% c("Clinical", "Confirmed", "Confirmed_Passive_CHW")) %>%
+  group_by(lubridate::year(period), district) %>%
+  summarise(count) %>%
+
+table(case_summary$district)
+```
+
+Note that after running the first chunk of the above code, no error
+message is initially produced, but also no summary. If you look in your
+console (bottom left of the screen), you will see a continuing "+" that
+indicates R thinks the code chunk is still ongoing. If you attempt to
+run the entire chunk of code, you get an error message saying that your
+"object 'case-summary' not found".
+
+*Question 7:* Why did this happen?
+
+*Question 8:* How would we fix it?
+
+## **Missing Objects**
+
+**Filepath Issues** - One of the earliest problems we encounter when
+coding is getting datasets to load properly in our session. We have
+tried to take steps to prevent this issue by working within a project,
+essentially a dedicated working directory that tells R where files are
+stored. If you are working within a project, you should only have to use
+a relative filepath (as in the early part of this code where we call
+"data/district-cases-long.csv").
+
+If you are not working from within a project, you have to specify the
+full filepath for an item, or manually set a working directory to where
+most of your files are stored. If any part of this filepath is incorrect
+or missing, you will encounter issues accessing your data.
+
+For our example, please try to download the Example_Cleaning_Jan_10.csv
+file in the google drive "Example Data" folder here -
+<https://drive.google.com/file/d/1fKbTh9rCnG79Q4J4D2gpXC5DjjEZrfAd/view?usp=sharing>
+
+```{r example - filepath issue, error = TRUE}
+example_data <- read_csv("C:/Users/wsheahan/OneDrive -
+                        PATH/Desktop/r-workshop/data/Example_Cleaning_Jan_10.csv")
+
+```
+
+If you try to run my original code, the filepath will not work for you.
+You will likely get an error along the lines of "Error: 'filepath.csv'
+does not exist". If you are unsure of the exact filepath for your data,
+try writing out everything up to the quotation marks from the above
+chunk, then hitting the *tab* key inside the "". This should autofill
+with datasets in your working directory so that you can choose the
+Example_Cleaning_Jan_10.csv dataset if you stored it in your project's
+data folder.
+
+*Question 9:* Why did this happen?
+
+*Question 10:* How would we fix it?
+
+**Unloaded libraries** - Another common error message to receive is that
+a function we are trying to use doesn't exist. Usually, "error in
+*function*(.) could not find function(*function*)". First, it is
+important to check that we have spelled the function name correctly,
+including any underscores or other symbols. If the function name is
+spelled correctly, that likely means that we haven't loaded the package
+that the function comes from using the *library()* command around the
+package's name.
+
+```{r example - library issue, error = TRUE}
+example_data <- read_csv("C:/Users/wsheahan/OneDrive -
+                        PATH/Desktop/r-workshop/data/Example_Cleaning_Jan_10.csv") %>%
+  clean_names()
+
+```
+
+If you run the above code chunk with your own correct filepath, you
+should get an error saying "could not find function "clean_names", even
+though we have used the clean_names() function in a previous session.
+
+*Question 11:* Why did this happen?
+
+*Question 12:* How would we fix it?
+
+## **Summary**
+
+This list of common errors is not comprehensive. The reality of coding
+in R is that every keystroke matters to some degree, and that every
+letter or number you type has the potential to cause an error. Luckily,
+R's error messages usually do a pretty good job of telling us what we
+have done wrong, and give us a good starting point for fixing our
+mistakes.
+
+I want to leave you with a quote from a blog post I found on
+interpreting common R errors.
+
+"Almost all of these types of errors have a common theme: **R is looking
+for something that isn't there.** If you look through the errors above,
+you'll see R is mostly reporting that it expects to find an object, a
+logical value, a function, a file, a sub-object, or a dependency based
+on the users' input, but that thing isn't there. This is an important
+concept to convey in any "error interpretation" lesson." -
+<https://warin.ca/posts/rcourse-howto-interpretcommonerrors/>
+
+A key takeaway from this lesson should hopefully be that the most common
+errors are often very small (usually a single letter) discrepancies that
+prevent R from making a connection with our dataset or with a loaded
+function or package. Understanding this paradigm is important for
+tackling problem solving as a systematic process in R (our next lesson),
+because it allows us to think from the point of view of R, and to see
+where errors are likely to be generated so we can actively prevent them
+going forward in our own code.
+
+When it comes to understanding, solving, and preventing error messages
+in R there is no substitute for practice and experience. That is why we
+are taking the next few sessions to begin the process of working with
+error messages in R, so that we all have a strong base-layer of
+understanding to use in our own experiences going forward.
+
+## **Tips and Tricks**
+
+1.  When you encounter an error, **read the whole message and look for
+    clues**. Usually it will try to tell you where the error occurred
+    (Example: if it says "could not find function "clean_names" then you
+    know there is probably an error in that line where you call the
+    clean_names() function).
+
+2.  If you aren't sure where an error occurred, **run the code line by
+    line** until you find it. This works especially well using dplyr's
+    pipe system that isolates code steps on different lines.
+
+3.  If you are having filepath issues, try using **tab complete** to
+    fill in your filename automatically.
+
+4.  If misspellings are possibly the culprit, try using
+    **names(dataset)** to get the spellings of all columns in the
+    dataset, or **table(dataset\$variable)** to get the spellings of all
+    possible values for a given variable
+
+5.  If you are having lots of small issues, it is usually helpful to
+    **keep all of your code visible** by keeping individual lines short
+    enough to stay on your visible screen (usually less than 80
+    characters). If you find a line is stretching off the screen, insert
+    a line break. It's hard to fix what you can't see.

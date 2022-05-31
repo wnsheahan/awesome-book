@@ -1,0 +1,121 @@
+---
+title: "Reading in Messy Data"
+author: "William Sheahan and Justin Millar"
+date: "1/10/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading in Messy Data with Janitor
+
+Today, we are going to practice reading data that is "messy". We will use a package called "Janitor" to 
+input "clean" column names, use tables to examine our data for inconsistencies, and use two functions, 
+"if_else" and "case_when" to replace erroneous values where they appear.
+
+To start, let's load the packages we will need. These will include tidyverse and lubridate, which 
+we have worked with before, as well as a new package called Janitor. For Janitor, you will likely 
+need to install the package (using install.packages("janitor")), instead of just loading it with the library function.
+
+
+```{r packages, warning=FALSE,message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+```
+
+## Reading in The Data
+
+An example dataset of randomized facilities RDT stockout data from DHIS2 has been provided for you
+in the R Training dropbox that can be accessed via the link in the code-chunk below.
+
+*Question 1: After loading this dataset normally with the code below, what do you notice about it that we may want to fix before beginning analysis?*
+
+```{r loading data, warning=FALSE, message=FALSE}
+example_messy <- readr::read_csv("https://drive.google.com/uc?export=download&id=1fKbTh9rCnG79Q4J4D2gpXC5DjjEZrfAd")
+
+names(example_messy)
+```
+
+You may notice that the column names are provided in a number of unhelpful formats (capital and lowercase letters, spaces, unusual punctuation, etc.) that R does not understand easily.
+
+We want to have our column names be as tidy as possible when we are calling them in our analysis, and we can use the clean_names function from the Janitor package to do this for us when we load-in the data.
+
+```{r loading data clean, warning=FALSE, message=FALSE}
+example_clean <- readr::read_csv("https://drive.google.com/uc?export=download&id=1fKbTh9rCnG79Q4J4D2gpXC5DjjEZrfAd") %>%
+  janitor::clean_names() 
+
+names(example_clean)
+```
+
+## Examining the Data
+Now that the column names are tidy, let's explore the variables to see if there are any issues with missing or unusual data. We can do this in a number of ways, but often the simplest and fastest way to do so is to make a table with a variable of interest.
+
+*Question 2: After running the code below, what issues did you find with the data?*
+
+```{r tables, echo=TRUE, results='hide'}
+table(example_clean$province, useNA = "always")
+table(example_clean$district, useNA = "always")
+table(example_clean$reported_year, useNA = "always")
+table(example_clean$reported_month, useNA = "always")
+table(example_clean$months_id, useNA = "always")
+table(example_clean$stocked_out_facilities, useNA = "always")
+```
+
+It seems there are issues with the months_id, reported_month, and district columns. Let's go through and fix these using the if_else and case_when functions from the dplyr package.
+
+## Replacing Values with if_else
+
+If_else can be very useful for replacing specific values in a dataset. What it essentially tells R is to search the dataset for a specific test value, then *if* it is found to replace it with another one, or *else* to replace it with a different value, or to leave it as is.
+
+The basic formula for if_else is as follows: if_else("The condition to test", "The value to input if the test condition == TRUE", "The value to input if the test condition == False"). 
+
+Let's use the if_else function with the dplyr mutate function to replace redundant values of the reported_month variable that we want to condense for our reporting.
+
+```{r replace month single cases, echo=TRUE}
+example_clean <- example_clean %>% 
+  mutate(reported_month = if_else(reported_month == "July", "Jul", reported_month),
+         reported_month = if_else(reported_month == "oct", "Oct", reported_month))
+```
+
+In the code above, in the value for "if test condition == FALSE", we have put the original variable name "reported_month" to indicate that, if the test condition is not met, we want to insert the unchanged value of that variable. In this case, that means that if the month is not one that we want to change (like July or oct) then the month will remain unchanged.
+
+
+## Replacing Values with case_when
+
+But what if we have an issue like in the months_id column, where there are many NA values, and we want to use the reported_month value to insert the correct month id? To type out 12 if_else statements would be somewhat burdensome, so let's use case_when to make it a little bit more efficient.
+
+Case_when is the vectorized form of if_else, meaning that we can use it to string multiple if_else statements together in one command. In this case, we want to tell R to create a new clean month id column, using the reported month labels to fill in the new ID month.
+
+This particular formula is telling R to make a new variable with mutate, and to fill it with values where if the reported_month is "X", the new column will indicate the corresponding month_id. For instance, if reported_month is "Jan", then we want the new column's value to be 1, which is January's month ID.
+
+```{r clean month_id, echo=TRUE}
+example_clean <- example_clean %>%
+  dplyr::mutate(month_id_clean = case_when(reported_month == "Jan" ~ 1,
+                                     reported_month == "Feb" ~ 2,
+                                     reported_month == "Mar" ~ 3,
+                                     reported_month == "Apr" ~ 4,
+                                     reported_month == "May" ~ 5,
+                                     reported_month == "Jun" ~ 6,
+                                     reported_month == "Jul" ~ 7,
+                                     reported_month == "Aug" ~ 8,
+                                     reported_month == "Sep" ~ 9,
+                                     reported_month == "Oct" ~ 10,
+                                     reported_month == "Nov" ~ 11,
+                                     reported_month == "Dec" ~ 12))
+```
+
+*Question 3: Now that we have fixed the reported_month and month_id values, what other issues can you find with this dataset?* 
+
+If you do find any issues, try to use if_else or case_when to fix them, using the templates from the code above to do so.
+
+As a reminder, it may be useful to use a table to view all of the dataset's observations in each variable. If we want to do this all at once, we can use lapply to do so with one command, *apply*ing the table command to each variable in turn.
+
+```{r lapply table, echo=TRUE, results='hide'}
+lapply(example_clean, table, useNA = "always")
+```
+
