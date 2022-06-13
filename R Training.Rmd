@@ -1,0 +1,105 @@
+--- 
+title: "R Training Ongoing - PATH Zambia"
+authors: "William Sheahan, Justin Millar, Hannah Slater"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+ #output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: openscapes/series
+description: "A mini bookdown compilation of R trainings."
+---
+--- 
+title: "R Training Ongoing - PATH Zambia"
+authors: "William Sheahan, Justin Millar, Hannah Slater"
+date: "`r Sys.Date()`"
+site: bookdown::bookdown_site
+ #output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: openscapes/series
+description: "A mini bookdown compilation of R trainings."
+---
+
+# Welcome {#welcome}
+
+The following tutorials and problem sets have been compiled for the purpose of training new R users in routine data analysis, using mock versions of datasets from DHIS2. If you have any questions or issues going through these materials, please feel free to reach out to the PATH training team:
+
+William Sheahan - wsheahan@path.org
+Justin Millar - jmillar@path.org
+Hannah Slater - hslater@path.org
+
+<!--chapter:end:index.Rmd-->
+
+
+# **Reading in Messy Data with R**
+
+Placeholder
+
+
+## **Reading in Messy Data with the Janitor Package**
+## **Reading in The Data**
+## **Examining the Data**
+## **Cleaning the Data**
+### **Replacing Values with if_else**
+### **Replacing Values with case_when**
+
+<!--chapter:end:Reading-messy-data.Rmd-->
+
+
+# **Joining Data with R**
+
+Placeholder
+
+
+## **Loading in Packages and Data**
+## **Joining Datasets Together**
+
+<!--chapter:end:Joining-Data.Rmd-->
+
+
+# **Understanding Error Messages in R**
+
+Placeholder
+
+
+## *Spelling and Punctuation Errors*
+### **Misspelling** 
+### **Capitalization** 
+### **Closing Punctuation** 
+### **Continuing Punctuation**
+## **Missing Objects**
+### **Filepath Issues** 
+### **Unloaded libraries** 
+## **Summary**
+## **Tips and Tricks for Understanding Error Messages in R**
+
+<!--chapter:end:Understanding-Error-Messages.Rmd-->
+
+
+# **Solving Unfamiliar Error Messages in R**
+
+Placeholder
+
+
+## **Consulting Doctor Google, PhD**
+## **How to Google Effectively**
+## **Tips and Tricks for Unfamiliar Error Messages**
+
+<!--chapter:end:Solving-Error-Messages-Part-1.Rmd-->
+
+
+# **Solving Error Messages in R - Part II**
+
+Placeholder
+
+
+## **Example of a Novel Error Message**
+## **Overall Process for Dealing with Unfamiliar Error Messages in R**
+
+<!--chapter:end:Solving-Error-Messages-Part-3.Rmd-->
+
