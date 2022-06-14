@@ -1,0 +1,362 @@
+---
+title: 'Day 3: Data visualization in R with ggplot2'
+author: "Hannah Slater, Justin Millar, and Will Sheahan"
+date: "11/8/2021"
+header-includes:
+   - \usepackage[default]{sourcesanspro}
+   - \usepackage[T1]{fontenc}
+mainfont: TT Arial
+output:
+  pdf_document: default
+urlcolor: blue
+---
+
+```{r setup viz, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F)
+```
+
+## Plotting with **`ggplot2`**
+
+The focus of today's session will be on data visualizations. There are many different approaches for making plots and other visuals in R. In addition to the base plotting functions that are directly built into R, there are hundreds of freely available packages for making just about any kind of chart or plot possible. 
+
+The package we will be focusing on today is called `ggplot2`, and is included in the `tidyverse` umbrella package.  First let's load the `tidyverse` package, as well as the dataset containing monthly health facility records from DHIS2. 
+
+```{r viz load}
+library(tidyverse)
+library(lubridate)
+
+case_data <- read_csv("data/district-cases-long.csv")
+```
+
+This data is already in "long" format, which is good because this is the best way to organize your data when using `ggplot`.
+
+### General ggplot template
+
+ggplot-style graphics are built layer by layer, which allows for flexibility and customization of plots. The general structure will look like this:
+
+```
+ggplot(data = <DATA>, mapping = aes(<MAPPINGS>)) +  <GEOM_FUNCTION>()
+```
+Let's see this with our data. Since this data set is quite large to plot out individual data, let's just filter rows for just the tested data from health facilities in Eastern Province, we'll call this `eastern_tested_data`. 
+
+```{r viz eastern}
+eastern_tested_data <- case_data %>% 
+  filter(data_type == "Tested", province == "Eastern")
+```
+
+
+First, use the `ggplot()` function and put `eastern_tested_data` in the data argument.
+
+```{r viz plot1}
+ggplot(data = eastern_tested_data)
+```
+
+Next we define a aesthetic mapping (using the `aes()` function). This is where we will define which columns will be assigned to the x- and y-axis, as well as other data-defined characteristics like size, shape, and color.
+
+```{r viz plot2}
+ggplot(data = eastern_tested_data, mapping = aes(x = period, y = count))
+```
+
+The final piece is to choose how we want the data to be displayed (lines, points, bars, histograms). These are called "geoms", and there is a separate geom for each type of graphic:
+
+* `geom_point()` for scatter plots, dot plots, etc.
+* `geom_boxplot()` for, well, boxplots!
+* `geom_line()` for trend lines, time series, etc.
+
+To add a geom to our plot use the `+` operator at the end of the line (not the start of a new line!).
+
+```{r viz plot3}
+ggplot(data = eastern_tested_data, mapping = aes(x = period, y = count)) +
+  geom_point()
+```
+
+These are the general components for any graphic made with ggplot. In this example, there's too much information clutter in the plot to discern anything useful. One option is to add transparency, which can be done using the `alpha` argument.
+
+```{r viz plot4}
+ggplot(data = eastern_tested_data, mapping = aes(x = period, y = count)) +
+  geom_point(alpha = 0.2)
+```
+
+
+The typical workflow for creating a ggplot graphic will begin with the steps we just completed: first organize the data that we want to plot, then get the primary components together in `ggplot()`, then add customization layers to create a final visual. In the next sections we will start starting adding more layers and aesthetics to go from this basic plot to a publication-quality graphic.
+
+### Using the `aes()` function
+
+In addition to organizing the axes, there other useful features that we can define in the `aes()` function. Specifically, this is where we will define features that are **determined by aspects of the input data**. Let's see an example by introducing color to the last plot.
+
+First, we can change the color of all the points by directly define the `color` argument in `geom_point()`:
+
+```{r viz plot5}
+ggplot(data = eastern_tested_data, 
+       mapping = aes(x = period, y = count)) +
+  geom_point(color = "blue", alpha = 0.2)
+```
+
+There are instances where defining a set color can be useful, but in this example it would be better if we could use color to represent an aspect of our data. For instance, in this plot we could have a different color for each district. This is possible using the `aes`, and stating which column we want to use to define color.
+
+```{r viz plot6}
+ggplot(data = eastern_tested_data, 
+       mapping = aes(x = period, y = count)) +
+  geom_point(aes(color = district), alpha = 0.4)
+```
+
+### Different types of `geom`
+
+#### Line plots
+
+First we are going to make a plot of confirmed cases over time in Chadiza -to do this we first need to filter the data
+
+```{r viz filter dat 1, include=TRUE}
+chadiza_conf <- case_data %>% filter(district == "Chadiza", data_type == "Confirmed")
+chadiza_conf
+```
+
+Now we are going to make a simple plot of this data - first we set up the data and what we want on the x and y axes
+
+
+```{r viz plot 1 new, include = TRUE}
+ggplot(data = chadiza_conf, mapping = aes(x = period, y = count))
+```
+
+Now we want to actually add the data! First we will use a simple point
+
+```{r viz plot 2 new, include = TRUE}
+ggplot(data = chadiza_conf, mapping = aes(x = period, y = count)) +
+geom_point()
+```
+
+It can be quite hard to spot the trends here, so we can add a line too.
+
+```{r viz plot 3 new, include = TRUE}
+ggplot(data = chadiza_conf, mapping = aes(x = period, y = count)) +
+geom_line()
+```
+
+When plotting case data, it's generally good practice to have the lower limit of the y-axis as 0.
+
+```{r viz plot 3b new, include = TRUE}
+ggplot(data = chadiza_conf, mapping = aes(x = period, y = count)) +
+geom_line() +
+aes(ymin=0)
+```
+
+Now this graph doesn't look particularly exciting, lets change the colour and add the points back on.
+
+```{r viz plot 4 new, include = TRUE}
+ggplot(data = chadiza_conf, mapping = aes(x = period, y = count)) +
+geom_line(size = 2, col = "grey70") +
+aes(ymin=0) +
+geom_point(col="deepskyblue2", size=3)
+```
+
+There are loads of colours we can use in Rstudio
+[http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf](http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf)
+
+Play around with the size and col options to make your graph look good!
+
+It is also important to use meaningful axis labels.
+
+```{r viz plot 5 new, include = TRUE}
+ggplot(data = chadiza_conf, mapping = aes(x = period, y = count)) +
+geom_line(size = 2, col = "grey70") +
+aes(ymin=0) +
+geom_point(col="deepskyblue2", size=3) +
+labs(x = "Year", y = "Confirmed malaria cases",
+title = "Confirmed malaria cases in Chadiza (2018 - 2021)")
+```
+
+We can easily add a second line to this plot - lets try and add **Confirmed_Passive_CHW**
+First we need to make a new data frame that includes this variable (as well as confirmed)
+
+
+```{r viz filter dat 2, include=TRUE}
+chadiza_conf_chw <- case_data %>%
+filter(district == "Chadiza",
+data_type %in% c("Confirmed", "Confirmed_Passive_CHW"))
+chadiza_conf_chw
+```
+
+
+We now need to specify that we want to colour the lines by 'data_type' - i.e. we want to use different colours for the 'confirmed' line and the 'Confirmed_Passive_CHW' lines. We do this by setting colour equal to **data_type**.
+
+```{r viz plot 6 new, include = TRUE}
+ggplot(data = chadiza_conf_chw, mapping = aes(x = period, y = count)) +
+geom_line(aes(color = data_type))
+```
+
+There are loads of ways we can make this look better - lets start with setting our own colours, making proper labels, and making the lines thicker.
+
+```{r viz plot 7 new, include = TRUE}
+ggplot(data = chadiza_conf_chw, mapping = aes(x = period, y = count)) +
+geom_line(aes(color = data_type), size = 1.2) +
+scale_color_manual(values = c("Confirmed"= "dodgerblue3",
+"Confirmed_Passive_CHW" = "olivedrab3")) +
+labs(x = "Year", y = "Confirmed and passive CHW malaria cases",
+title = "Confirmed and passive CHW malaria cases in Chadiza (2018 - 2021)")
+```
+
+> **Question 1a:** Can you plot health facility tests over time in Katete district?
+
+> **Question 1b:** Can you plot health facility tests and CHW passive tests over time in Katete district?
+
+> **Question 1c:** How can you make your graph look better?!?
+
+
+#### Bar plots
+
+Another very common data visualization is called barplot. To see this, lets make a new subset of our data for confirmed cases from health facilities in Eastern Province in January 2020. Now might be a good time to load the `lubridate` library if you haven't yet.
+
+```{r viz eastern filter}
+library(lubridate)
+eastern_conf <- case_data %>% 
+  filter(province == "Eastern", data_type == "Confirmed", 
+         period == ymd("2020-01-01"))
+```
+
+```{r viz plot8}
+ggplot(data = eastern_conf, aes(x = district, y = count)) +
+  geom_col() +
+  labs(x = "District", y = "Confirmed cases",
+       title = "Confirmed cases in health facilities", subtitle = "Jan. 2020")
+```
+In this case, it may actually be easier to read if we flip the axes. Rather than re-writing our code, we can add the `coord_flip()` function to do this automatically.
+
+```{r viz plot9}
+ggplot(data = eastern_conf, aes(x = district, y = count)) +
+  geom_col() +
+  labs(x = "District", y = "Confirmed cases",
+       title = "Confirmed cases in health facilities", subtitle = "Jan. 2020") +
+  coord_flip()
+```
+By default, the districts will be placed in alphabetical order. Alternatively, we could arrange them by descending or ascending order based on the confirmed case value by using `reorder` in the `aes()` function.
+
+```{r viz plot10}
+ggplot(data = eastern_conf, aes(x = reorder(district, count), y = count)) +
+  geom_col() +
+  labs(x = "District", y = "Confirmed cases",
+       title = "Confirmed cases in health facilities", subtitle = "Jan. 2020") +
+  coord_flip()
+```
+Next, we will create a bar plot for visualizing all of the case data, including from community health workers, from Eastern province in Jan. 2020. First, let's create a new subset of our data.
+
+```{r viz eastern filter3}
+eastern_cases <- case_data %>% 
+  filter(province == "Eastern", 
+         data_type %in% c("Confirmed", "Clinical", "Confirmed_Passive_CHW"),
+         period == ymd("2020-01-01"))
+```
+
+Now we will create a specialized version of a bar plot called a "stacked" bar plot. In this case, we will stack each of the data types, which will be designated with a different color.
+
+```{r viz plot11}
+ggplot(data = eastern_cases, aes(x = reorder(district, count), y = count,
+                                fill = data_type)) +
+  geom_col() +
+  labs(x = "District", y = "Confirmed cases",
+       title = "Confirmed cases in health facilities", subtitle = "Jan. 2020") +
+  coord_flip()
+  
+```
+
+Finally, we can add some customization to complete the plot.
+
+```{r viz plot12}
+ggplot(data = eastern_cases, aes(x = reorder(district, count), y = count,
+                                fill = data_type)) +
+  geom_col() +
+  labs(x = "District", y = "Confirmed cases",
+       title = "Confirmed cases in health facilities", subtitle = "Jan. 2020") +
+  coord_flip() +
+  scale_fill_manual(values = c("Confirmed" = "dodgerblue",
+                               "Clinical" = "tomato",
+                               "Confirmed_Passive_CHW" = "goldenrod2")) +
+  theme_classic()
+```
+
+> **Question 2A:** Create a barplot for CHW cases in each district in Southern Province during November 2019.
+
+> **Question 2B:** Create a stacked barplot for confirmed, clinical, and CHW cases in each district in Southern province during November 2019.
+
+> **Question 2C:** Create a barplot for confirmed cases in Chipata district for each month during 2020. 
+
+### Exporting plots
+
+To export a plot, we use the `ggsave()` function. This function allow us to many characteristics of the output file, such as the file type, resolution, and size. 
+
+To use `ggsave()`, we will first save our plot into a new variable, then we can define an output file path. Typically you'll want to create a new folder for outputs in your project folder, you should have done this earlier in the workshop (called either `plots` or `output`).
+
+Let's save the last plot we made in the previous section as PDF. 
+
+```{r viz stackedbar, eval=FALSE}
+stacked_bar_plot <- ggplot(data = eastern_cases, aes(x = reorder(district, count), y = count,
+                                fill = data_type)) +
+  geom_col() +
+  labs(x = "District", y = "Confirmed cases",
+       title = "Confirmed cases in health facilities", subtitle = "Jan. 2020") +
+  coord_flip() +
+  scale_fill_manual(values = c("Confirmed" = "dodgerblue",
+                               "Clinical" = "tomato",
+                               "Confirmed_Passive_CHW" = "goldenrod2")) +
+  theme_classic()
+
+ggsave(filename = "plots/eastern-cases-jan-2020.pdf", plot = stacked_bar_plot)
+```
+
+We can also save the exact same plot as a PNG file just by change the extension in the filename. 
+
+```{r viz save, eval=FALSE}
+ggsave(filename = "plots/eastern-cases-jan-2020.png", plot = stacked_bar_plot)
+```
+
+
+### Plotting summarised data
+
+We can use the data manipulation skills we covered in previous parts of the workshop to create a summarized data set, which can then be visualized with `ggplot`. Let's started by creating a summarized data frame that contains the total number of monthly tests from health facilities in each province.
+
+```{r viz tbp}
+tests_by_province <-  case_data %>% 
+  filter(data_type == "Tested") %>% 
+  group_by(province, period) %>% 
+  summarise(total_tested = sum(count), .groups = "drop")
+```
+
+Once we have the summarized data set, we can use the technique above to make powerful summary visualizations. For example, let create a line plot with this summarized data using the skills we learned in the previous section. We can even use a custom color palette using the `scale_color_viridis_d()` function. 
+
+
+```{r viz plot13}
+  ggplot(data = tests_by_province, 
+       mapping = aes(x = period, y = total_tested, color = province)) +
+  geom_line() + 
+  geom_point() +
+  labs(y = "Total tests", x = "Date", 
+       title = "Total monthly tests in health facilities") + 
+  scale_color_viridis_d("Province") +
+  theme_classic()
+
+```
+
+This example illustrates how in just a few lines of code we can combine the skills we have developed through the workshop to create powerful data visualizations.
+
+> **Question 3A:** Create a summarised data set that contains the cummulative  monthly cases (confirmed, clinical, and CHW) for each province, then create a line plot that shows the time-series data where each province is a unique color. 
+
+
+### Facets
+
+Another tool in ggplot is called *faceting*, which allows us to split one plot into multiple plots based on a categorical field in the dataset. 
+
+The `facet_wrap()` function is used the facets are based on a single variable and the orientation of facets is done sequentially.
+
+```{r viz plot14}
+  ggplot(data = tests_by_province, 
+       mapping = aes(x = period, y = total_tested, color = province)) +
+  facet_wrap(vars(province)) +
+  geom_line() + 
+  geom_point() +
+  labs(y = "Total tests", x = "Date", 
+       title = "Total monthly tests in health facilities") + 
+  scale_color_viridis_d("Province") +
+  theme_classic()
+```
+
+> **Question 4:** Create a summarized data set that contains the annual totals for confirmed, clinical, and CHW cases in each district in Eastern Province from 2018 to 2020. Then create a stack bar plot where the different data types are represented with a unique color, and each district has it's own facet.
+
