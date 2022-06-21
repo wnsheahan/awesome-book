@@ -1,0 +1,346 @@
+---
+title: 'Workshop 2, Session 1: Introduction to the PATHtoolsZambia package'
+author: "Hannah Slater, Justin Millar, William Sheahan"
+date: "12th April 2022"
+header-includes:
+   - \usepackage[default]{sourcesanspro}
+   - \usepackage[T1]{fontenc}
+mainfont: TT Arial
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r include = FALSE, echo=FALSE}
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(PATHtoolsZambia)
+monthly_cases <- readRDS("../data/save_monthly_cases_apr2022.RDS")
+chw_cases_2021 <- readRDS("../data/save_chw_cases_2021.RDS")
+```
+
+```{r setup w2d1, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dev="cairo_pdf")
+```
+
+# **Introduction to the *PATHtoolsZambia* package**
+In general, packages are bundles of functions, code, data and documentation that can be downloaded, used and shared by any user. By having commonly defined sets of functions, we can write reproducible code that can be shared and implemented by anyone else. 
+
+As these packages are often developed by experienced programmers, we typically have confidence that the tools provided by the package are robust. 
+
+When analysing malaria data from Zambia, we want similar assurances:
+
+
+1. Data have been cleaned using a set of consistent and clearly defined processes 
+2. Users are using identical datasets and can generate identical results
+3. Datasets are frequently updated to enable analyses of recent data
+4. Datasets are clearly documented so users can ensure they’re using the data correctly
+5. Multiple datasets are stored in the same place, with common or interoperable formats
+
+This is what the **PATHtoolsZambia** package aims to achieve!
+
+Previously when conducting analyses of DHIS2 data in Zambia, there were several options, all of which had limitations: 
+
+1. *Pulling data directly from DHIS2*
+  + Time consuming to correctly construct queries
+  + Often problems downloading large data pulls
+  + Data format outputted required extensive formatting before you could start doing analyses
+  + Potential for error and lack of reproducibility as users could define queries and the resulting data table columns/rows in different ways, meaning analysis code may not work for different data formats
+  + Still need to manually join data between the 2 DHIS2 instances
+2. *Creating visualizations directly in DHIS2*
+  + Hard to use interface 
+3. *'Visualize no malaria' dashboards*
+  + Limited set of reports and visualizations on offer
+  + All data processing is ‘behind the scenes’ meaning system may not be future-proof 
+  + Relies on proprietary software than can be very expensive
+4. *Accessing recent pulls of both the NMEC and MOH DHIS2 malaria data*
+  + Need to join multiple datasets (two DHIS2 datasets, information on period, facility details, population) – most of which can be automated, but manual steps are always needed to identify and fix errors in the data
+  + Possibility for different user choices when cleaning and joining data meaning errors could be introduced and users could end up with inconsistent datasets
+
+
+**PATHtoolsZambia** is an R package that stores cleaned and joined versions of Zambian malaria DHIS2 data alongside other helpful spatial and population datasets (i.e. shapefiles, population estimates, CHW mainlists). The data are kept up-to-date, documented and in a consistent format. 
+
+The package also contains several pre-defined functions to analyse data (the range of functions is quite limited now and we hope we can all build out more in the near future)
+
+Unlike the packages we downloaded in the last training, **PATHtoolsZambia** is stored in a private repository and only users with agreed permissions can download and use the data – this is to ensure the MoH and NMEC retain control over who can access and use the data. 
+
+# Overview of the package on GitHub
+
+
+We can access the GitHub PATHtoolsZambia page at: [https://github.com/PATH-Global-Health/PATHtoolsZambia](https://github.com/PATH-Global-Health/PATHtoolsZambia)
+
+Here we can take a quick look at the architecture and documentation associated with the package, but in generally we’ll normally just access the package directly via RStudio.
+
+It might be a good idea to add this website to your bookmarks bar now!
+
+![](../hs_images/ws2_img1.PNG){width=90%}
+
+There are a few things to note here:
+
+
+1. If you scroll down, there are detailed instructions on how to install the package and how to use the ‘retrieve’ function to import data
+2. There is an option to create ‘issues’ – this might be when you spot an error in the data, want a particular function added to the package, or anything really that you find that would be useful to flag to Justin to add or fix in the package
+3. The ‘excl’ folder contains the scripts used to process, join and clean the raw DHIS2 data – can be useful to read through these to understand this process in detail
+4. There is a link to a website where eventually we’ll store details on the functions and datasets, and any bespoke functions. We will  also use this site to store examples of specific analyses and all the past training materials  [https://path-global-health.github.io/PATHtoolsZambia/](https://path-global-health.github.io/PATHtoolsZambia/) 
+
+
+### Example: creating a new issue
+
+On the landing page for the package, select ‘issues’ in the top row (2), then select to create a ‘new issue’
+
+![](../hs_images/ws2_img2.PNG){width=90%}
+
+Then try and write a relatively informative title for the issue, and add in more specific details in the box – this should include the error/query/suggestion in detail and recommended action if appropriate. 
+
+![](../hs_images/ws2_img3.PNG){width=90%}
+
+
+Raising issues in this central place means we are:
+
+* Ensuring we’re constantly identifying and fixing errors
+* Not replicating efforts
+* Being transparent about changes made to the package over time
+* Allows developers to ensure all issues are properly resolved
+
+# Using PATHtoolsZambia in RStudio
+
+Make sure you’ve followed the instructions to install **PATHtoolsZambia** before moving to this section.
+
+Firstly, we can load in the library and take a look at all the datasets in the package
+
+```{r snip1, eval = FALSE}
+library(PATHtoolsZambia)
+all_datasets <- PATHtoolsZambia::list_data()
+print(all_datasets, n = 23)
+```
+
+
+
+The main datasets we're going to be covering today are:
+
+**1. Monthly cases (monthly-cases)**
+This dataset contains data on the number of passively tested and positive cases detected at health facilities and CHWs each month. CHW data is aggregated up to their parent facility, so the number of passively detected tests or cases by CHWs is likely to include multiple CHWs. The CHW data are from the NMEC DHIS2 and the HF data are from the MOH DHIS2. 
+
+**2. CHW cases (chw-cases-20XX)**
+This data is split up by year as it is quite large. They are named, for example, chw-cases-2021. This dataset contains monthly cases and tests conducted by each CHW both actively and passively, as well as how many cases have travelled, and the number of index cases followed up and houses visited. These data are all from the NMEC DHIS2
+
+**3. HF and CHW mainlist (hf-master-wide and chw-masterlist)**
+This is a complete list of every CHW in the NMEC DHIS, including information on their parent facility, district, province, geolocation, date their record was created. 
+
+**4. Province and district shapefiles (district-shp and province-shp)**
+These files provide the geographical boundaries and population sizes for the districts and provinces in Zambia    
+
+  
+   
+
+We can import any of these datasets into our Rstudio workspace by using a function defined in the **PATHtoolsZambia** package called *retrieve*, for example, let's start by taking a look at *monthly-cases* which is very similar to the dataset we analysed in the previous training
+
+```{r snip2, eval = FALSE}
+monthly_cases <- retrieve("monthly-cases")
+```
+
+We can take a look at the structure of this dataset using some of the functions we learnt last training
+
+```{r snip3, eval = TRUE}
+head(monthly_cases)
+summary(monthly_cases)
+table(monthly_cases$data_type)
+table(monthly_cases$age_group)
+table(monthly_cases$period)
+table(monthly_cases$geo_province)
+```
+
+
+We can also look a bit more closely at some of the aspects of this dataset, for example, lets find out how many HF's report data in this dataset
+
+```{r snip4, eval = TRUE}
+unique_HFs <- unique(monthly_cases$org_unit_uid)
+length(unique_HFs)
+```
+
+
+Before we start using any more complicated commands, lets do a quick recap of some of the functions we learnt last time...starting with _filter_ - we can _filter_ by any of the columns and their values. Lets start by taking a look at the values in the data_type column and filtering by that
+
+```{r snip4b, eval = TRUE}
+table(monthly_cases$data_type)
+recap1 <- monthly_cases %>% filter(data_type == "Clinical")
+recap1
+
+```
+
+We can also filter by 2 or more data types using the _%in%_ command
+
+```{r snip4c, eval = TRUE}
+table(monthly_cases$data_type)
+recap2 <- monthly_cases %>% filter(data_type %in% c("Clinical", "Confirmed"))
+recap2
+```
+
+
+We can also filter by date in several ways....
+```{r snip4d, eval = FALSE}
+table(monthly_cases$data_type)
+recap3 <- monthly_cases %>% filter(period == ymd("2021-01-01"))
+recap3
+
+recap4 <- monthly_cases %>% filter(year(period)  == "2021")
+recap4
+
+recap5 <- monthly_cases %>% filter(year(period)  %in% c(2014, 2015, 2016))
+recap5
+
+recap6 <- monthly_cases %>% filter(between(period, ymd("2019-01-01"), ymd("2019-06-30")))
+recap6
+```
+
+Do you remember how we'd check exactly how _between_ works?
+```{r snip4e, eval = FALSE}
+?between
+```
+
+
+We can also create new columns using the function _mutate_
+```{r snip4f, eval = FALSE}
+recap6 <- monthly_cases %>% mutate(year = year(period))
+```
+
+and we can use _select_ to return only certain columns
+```{r snip4g, eval = TRUE}
+recap7 <- monthly_cases %>% select(period, data_type, count, reported_province)
+```
+
+and from here we could then filter for only clinical cases and then calculate the number of cases per year per province
+```{r snip4h, eval = FALSE}
+recap7_b <- monthly_cases %>% select(period, data_type, count, reported_province) %>% 
+  filter(data_type == "Clinical") %>% 
+  mutate(year = year(period)) %>% 
+  group_by(year, reported_province) %>% 
+  summarise(total_clinical = sum(count, na.rm=TRUE))
+```
+
+**Q** How many cases were there in Muchinga in 2018?
+
+
+
+We could also take a look at how many HFs are reporting each month
+
+```{r snip6, eval = TRUE}
+hf_each_month <- monthly_cases %>% group_by(period) %>% 
+  summarise(n_hf = length(unique(org_unit_uid)))
+
+head(hf_each_month)
+
+ggplot(hf_each_month, aes(x = period, y = n_hf)) +
+  geom_line(size = 1.2, color = "red") +
+  labs(x = "Time", y = "Number of HFs reporting each month") +
+  theme_minimal()
+```
+
+Can you approximate when this dataset was last updated? 
+
+Lets start by filtering this data - let's look at _clinical_ and _confirmed_ data from Kitwe district in Jan 2021
+
+```{r snip6b, eval = TRUE}
+kitwe_jan21 <- monthly_cases %>% filter(data_type %in% c("Clinical", "Confirmed"),
+                         period == ymd("2021-01-01"),
+                         reported_district == "Kitwe") 
+```
+
+Q: How many cases were there in total in Kitwe in Jan 2021? (here are 2 ways to answer this!)
+
+```{r snip6c, eval = TRUE}
+kitwe_jan21 %>% summarise(tot_cases = sum(count, na.rm = TRUE))
+
+sum(kitwe_jan21$count, na.rm=TRUE)
+```
+
+Q: What proportion of these cases occurred in under 5's? 
+
+```{r snip6d, eval = TRUE}
+kitwe_jan21 %>% group_by(age_group) %>% 
+  summarise(tot_cases = sum(count, na.rm = TRUE))
+
+(2333 + 500) / (2333 + 500 + 14970)
+
+```
+
+
+
+We could also look in more detail at one of the _data_types_ - lets estimate how many RDTs were conducted by CHWs each month in 2020 and 2021
+
+```{r snip7, eval = TRUE}
+chw_tests_per_month <- monthly_cases %>% filter(data_type == "Tested_Passive_CHW",
+                         year(period) %in% c(2020, 2021)) %>% 
+  group_by(period) %>% 
+  summarise(total_tested= sum(count, na.rm=TRUE))
+
+ggplot(chw_tests_per_month, aes(x = period, y = total_tested)) +
+  geom_line(size = 1.2, color = "deepskyblue3") +
+  geom_point(color = "deepskyblue4") +
+  labs(x = "Time", y = "Number of RDTs conducted by CHWs") + 
+  theme_minimal()
+```
+
+
+
+
+
+
+## **Exercises:** Can you import the _chw-cases-2021_ dataset and find out:
+
+**1** What are all the data types in this dataset?   
+
+**2** Can you _filter_ the dataset to look at just the data for CHW with UID _A03JsBhAz6F_ in January 2021?
+
+* Does it make sense what all the _data_types_ are here? In the raw data from NMEC the number of tests and positives is given by age and 'total' - when summing over all ages, you'd expect it to equal 'total' but this is not always the case - this is why we keep all the variables here - the _data_types_ called for example _total_ap_CHW_ show the totals straight from NMEC (where a/p = active/passive and p/t = positive/tested)
+
+**3** How many index cases were followed up in each province in 2021?  
+
+**4** Can you make a barplot to show this output (HINT: _geom_col()_ is the option that gives us bars, and _coord_flip()_ can make graphs like this easier to read)...what other things can we do to make this plot look nice?
+
+**5** How many active positive cases were there in each district in Eastern Province? (using the total_ap_CHW _data_type_)
+
+
+
+## Answers to exercises
+
+### Number 3
+```{r snip8a, eval = TRUE}
+index_follow_up <- chw_cases_2021 %>% filter(data_type == "Index_follow_up_CHW") %>% 
+  group_by(reported_province) %>% 
+  summarise(total_follow_ups = sum(count, na.rm=TRUE))
+index_follow_up
+```
+### Number 4
+```{r snip8b, eval = TRUE}
+ggplot(index_follow_up, aes(x = reported_province, y = total_follow_ups)) +
+  geom_col() +
+  coord_flip()
+```
+
+Now trying to make this plot look nicer!
+```{r snip8c, eval = TRUE}
+index_follow_up_clean <- index_follow_up %>% 
+  filter(!is.na(reported_province)) 
+
+ggplot(index_follow_up_clean, aes(x = reorder(reported_province,total_follow_ups), 
+                                  y = total_follow_ups)) +
+  geom_col(fill = "olivedrab4", alpha = 0.6) +
+  labs(x = "", y = "Total number of index cases followed up") +
+  coord_flip() +
+  theme_minimal()
+
+```
+
+
+### Number 5
+```{r snip8d, eval = TRUE}
+chw_active_pos_eastern <- chw_cases_2021 %>% 
+  filter(reported_province == "Eastern",
+                          data_type == "total_ap_CHW") %>% 
+  group_by(reported_district) %>% 
+  summarise(total_active_positive = sum(count, na.rm=TRUE))
+chw_active_pos_eastern
+```
